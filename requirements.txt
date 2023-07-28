@@ -1,3 +1,2 @@
 # The requirement file for the python server
-threading
 cryptography
