@@ -1,0 +1,4 @@
+# The requirement file for the python server
+socket==0.8.0
+threading==0.5.4
+cryptography==3.4.8
