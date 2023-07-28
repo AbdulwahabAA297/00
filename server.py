@@ -23,35 +23,9 @@ symmetric_key = Fernet.generate_key()
 
 f = Fernet(symmetric_key)
 
-# Generate a private and public key pair for authentication and digital signatures
+# Create a dictionary to store the public keys of the users
 
-private_key = rsa.generate_private_key(
-
-    public_exponent=65537,
-
-    key_size=2048,
-
-)
-
-public_key = private_key.public_key()
-
-# Save the public key to a file
-
-with open("public_key.pem", "wb") as f:
-
-    f.write(public_key.public_bytes(
-
-        encoding=serialization.Encoding.PEM,
-
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-
-    ))
-
-# Load the public key of the other user from a file
-
-with open("other_public_key.pem", "rb") as f:
-
-    other_public_key = load_pem_public_key(f.read())
+public_keys = {}
 
 # Create a socket object for the server
 
@@ -93,11 +67,31 @@ def handle_client(client):
 
     client.send(message.encode())
 
-    # Send the symmetric key and the public key to the client
+    # Send the symmetric key to the client
 
     client.send(symmetric_key)
 
-    client.send(public_key.public_bytes(
+    # Receive the public key of the client and store it in the dictionary
+
+    public_key = load_pem_public_key(client.recv(1024))
+
+    public_keys[username] = public_key
+
+    # Generate a private and public key pair for authentication and digital signatures
+
+    private_key = rsa.generate_private_key(
+
+        public_exponent=65537,
+
+        key_size=2048,
+
+    )
+
+    other_public_key = private_key.public_key()
+
+    # Send the public key to the client
+
+    client.send(other_public_key.public_bytes(
 
         encoding=serialization.Encoding.PEM,
 
@@ -117,9 +111,9 @@ def handle_client(client):
 
             signature = client.recv(256)
 
-            # Verify the signature using the other public key
+            # Verify the signature using the public key
 
-            other_public_key.verify(
+            public_key.verify(
 
                 signature,
 
